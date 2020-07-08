@@ -10,6 +10,7 @@ import luigi
 
 from edx.analytics.tasks.common.bigquery_load import BigQueryLoadDownstreamMixin, BigQueryLoadTask, BigQueryTarget
 from edx.analytics.tasks.common.mysql_load import get_mysql_query_results
+from edx.analytics.tasks.util.overwrite import OverwriteOutputMixin
 from edx.analytics.tasks.common.snowflake_load import (
     SnowflakeLoadDownstreamMixin, SnowflakeLoadFromHiveTSVTask, SnowflakeTarget
 )

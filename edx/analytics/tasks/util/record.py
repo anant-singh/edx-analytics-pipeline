@@ -339,7 +339,7 @@ class Record(object):
         return cls.from_string_tuple(tuple(tsv_str.rstrip('\r\n').split('\t')))
 
     @classmethod
-    def get_sql_schema(cls, use_timestamp_tz=False):
+    def get_sql_schema(cls):
         """
         A skeleton schema of the SQL table that could store this data.
 
@@ -349,10 +349,7 @@ class Record(object):
         """
         schema = []
         for field_name, field_obj in cls.get_fields().items():
-            sql_type = field_obj.sql_type
-            if use_timestamp_tz and sql_type == 'DATETIME':
-                sql_type = 'TIMESTAMP_TZ'
-            schema.append((field_name, sql_type))
+            schema.append((field_name, field_obj.sql_type))
         return schema
 
     @classmethod

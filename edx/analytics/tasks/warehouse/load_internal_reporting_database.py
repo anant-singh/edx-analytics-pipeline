@@ -99,7 +99,7 @@ class MysqlToVerticaTaskMixin(MysqlToWarehouseTaskMixin):
     )
 
 
-class ExportMysqlTableToS3Task(MysqlToVerticaTaskMixin, luigi.Task):
+class ExportMysqlTableToS3Task(MysqlToVerticaTaskMixin, OverwriteOutputMixin, luigi.Task):
 
     table_name = luigi.Parameter(
         description='The name of the table.',
@@ -200,11 +200,9 @@ class ExportMysqlDatabaseToS3Task(MysqlToVerticaTaskMixin, luigi.Task):
         """Determines whether to exclude a table during the import."""
 
         if self.include:
-            if any(re.match(pattern, table_name) for pattern in self.include):
-                return False
+            return not any(re.match(pattern, table_name) for pattern in self.include)
         elif self.exclude:
-            if any(re.match(pattern, table_name) for pattern in self.exclude):
-                return True
+            return any(re.match(pattern, table_name) for pattern in self.exclude):
 
         return False
 

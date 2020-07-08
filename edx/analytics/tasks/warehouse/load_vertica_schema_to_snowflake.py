@@ -51,7 +51,7 @@ class LoadVerticaTableFromS3ToSnowflakeTask(VerticaTableExportMixin, VerticaTabl
             elif field_type == 'uuid':
                 # Snowflake has no uuid type, but Vertica's is just a 36 character string
                 field_type = 'varchar(36)'
-            elif field_type = 'timestamp':
+            elif field_type == 'timestamp':
                 field_type = 'timestamp_tz'
 
             results.append((column_name, field_type))
@@ -177,7 +177,7 @@ class LoadVerticaTableFromS3WithMetadataToSnowflakeTask(VerticaTableExportMixin,
             elif field_type == 'uuid':
                 # Snowflake has no uuid type, but Vertica's is just a 36 character string
                 field_type = 'varchar(36)'
-            elif field_type = 'timestamp':
+            elif field_type == 'timestamp':
                 field_type = 'timestamp_tz'
 
             results.append((column_name, field_type))

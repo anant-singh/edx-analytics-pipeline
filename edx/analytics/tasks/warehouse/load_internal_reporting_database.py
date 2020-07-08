@@ -94,7 +94,7 @@ class MysqlToVerticaTaskMixin(MysqlToWarehouseTaskMixin):
     # Don't use the same source for BigQuery loads as was used for Vertica loads,
     # until their formats and exclude-field parameters match.
     warehouse_subdirectory = luigi.Parameter(
-        default='import_mysql_to_vertica',
+        default='import_mysql_to_s3',
         description='Subdirectory under warehouse_path to store intermediate data.'
     )
 

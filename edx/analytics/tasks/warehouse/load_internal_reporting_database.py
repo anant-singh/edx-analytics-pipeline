@@ -99,6 +99,162 @@ class MysqlToVerticaTaskMixin(MysqlToWarehouseTaskMixin):
     )
 
 
+class ExportMysqlTableToS3Task(MysqlToVerticaTaskMixin, luigi.Task):
+
+    table_name = luigi.Parameter(
+        description='The name of the table.',
+    )
+
+    def __init__(self, *args, **kwargs):
+        super(ExportMysqlTableToS3Task, self).__init__(*args, **kwargs)
+        self.required_tasks = None
+        self.sqoop_export_task = None
+        self.mysql_table_schema = []
+        self.deleted_fields = []
+
+    def requires(self):
+        if self.required_tasks is None:
+            self.required_tasks = {
+                'sqoop_export_task': self.sqoop_export_mysql_table_task
+            }
+        return self.required_tasks
+
+    def complete(self):
+        return self.sqoop_export_mysql_table_task.complete()
+
+    def mysql_compliant_schema(self):
+        if not self.mysql_table_schema:
+            results = get_mysql_query_results(self.db_credentials, self.database, 'describe {}'.format(self.table_name))
+            for result in results:
+                field_name = result[0].strip()
+                field_type = result[1].strip()
+                field_null = result[2].strip()
+                if self.should_exclude_field(self.table_name, field_name):
+                    self.deleted_fields.append(field_name)
+                else:
+                    self.mysql_table_schema.append((field_name, field_type, field_null))
+        return self.mysql_table_schema
+
+    @property
+    def sqoop_export_mysql_table_task(self):
+        if self.sqoop_export_task is None:
+            mysql_schema = self.mysql_compliant_schema()
+            column_names = [field_name for (field_name, _field_type, _field_null) in mysql_schema]
+            partition_path_spec = HivePartition('dt', self.date.isoformat()).path_spec
+            destination = url_path_join(
+                self.warehouse_path,
+                self.warehouse_subdirectory,
+                self.database,
+                self.table_name,
+                partition_path_spec
+            ) + '/'
+            additional_metadata = {
+                'table_schema': mysql_schema,
+                'deleted_fields': self.deleted_fields,
+                'database': self.database,
+                'table_name': self.table_name,
+                'date': self.date.isoformat(),
+            }
+            self.sqoop_export_task = SqoopImportFromMysql(
+                table_name=self.table_name,
+                credentials=self.db_credentials,
+                database=self.database,
+                destination=destination,
+                overwrite=self.overwrite,
+                mysql_delimiters=False,
+                fields_terminated_by=self.field_delimiter,
+                null_string=self.null_marker,
+                delimiter_replacement=' ',
+                direct=False,
+                columns=column_names,
+                additional_metadata=additional_metadata,
+            )
+
+        return self.sqoop_export_task
+
+
+class ExportMysqlDatabaseToS3Task(MysqlToVerticaTaskMixin, luigi.Task):
+
+    overwrite = luigi.BoolParameter(
+        default=False,
+        significant=False,
+    )
+
+    include = luigi.ListParameter(
+        default=(),
+        description='List of regular expression patterns for matching the names of tables that should be output.',
+    )
+
+    exclude = luigi.ListParameter(
+        default=(),
+        description='List of regular expression patterns for matching the names of tables that should not be output.',
+    )
+
+    def __init__(self, *args, **kwargs):
+        super(ExportMysqlDatabaseToS3Task, self).__init__(*args, **kwargs)
+        self.table_includes_list = []
+        self.creation_time = None
+        self.required_tasks = None
+
+    def should_exclude_table(self, table_name):
+        """Determines whether to exclude a table during the import."""
+
+        if self.include:
+            if any(re.match(pattern, table_name) for pattern in self.include):
+                return False
+        elif self.exclude:
+            if any(re.match(pattern, table_name) for pattern in self.exclude):
+                return True
+
+        return False
+
+    def requires(self):
+        if self.creation_time is None:
+            self.creation_time = datetime.datetime.utcnow().isoformat()
+
+        if not self.table_includes_list:
+            results = get_mysql_query_results(self.db_credentials, self.database, 'show tables')
+            table_list = [result[0].strip() for result in results]
+            self.table_includes_list = [table_name for table_name in table_list if not self.should_exclude_table(table_name)]
+
+        for table_name in self.table_includes_list:
+                yield ExportMysqlTableToS3Task(
+                    table_name=table_name,
+                    credentials=self.db_credentials,
+                    database=self.database,
+                )
+
+    def output(self):
+        return self.database_metadata_target()
+
+    def database_metadata_target(self):
+        partition_path_spec = HivePartition('dt', self.date.isoformat()).path_spec
+        metadata_destination = url_path_join(
+            self.warehouse_path,
+            self.warehouse_subdirectory,
+            self.database,
+            DUMP_METADATA_OUTPUT,
+            partition_path_spec,
+            METADATA_FILENAME,
+        )
+        return get_target_from_url(metadata_destination)
+
+    def run(self):
+        metadata = {
+            'table_list': self.table_includes_list,
+            'database': self.database,
+            'date': self.date.isoformat(),
+            'exclude': self.exclude,
+            'include': self.include,
+            'warehouse_path': self.warehouse_path,
+            'warehouse_subdirectory': self.warehouse_subdirectory,
+            'creation_time': self.creation_time,
+            'completion_time': datetime.datetime.utcnow().isoformat(),
+        }
+        with self.output().open('w') as metadata_file:
+            json.dump(metadata, metadata_file)
+
+
 class LoadMysqlToVerticaTableTask(MysqlToVerticaTaskMixin, VerticaCopyTask):
     """
     Task to import a table from mysql into vertica.

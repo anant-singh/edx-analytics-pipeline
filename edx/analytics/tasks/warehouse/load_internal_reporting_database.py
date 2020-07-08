@@ -213,16 +213,18 @@ class ExportMysqlDatabaseToS3Task(MysqlToVerticaTaskMixin, luigi.Task):
             self.creation_time = datetime.datetime.utcnow().isoformat()
 
         if not self.table_includes_list:
+            log.debug("computing table list")
             results = get_mysql_query_results(self.db_credentials, self.database, 'show tables')
             table_list = [result[0].strip() for result in results]
             self.table_includes_list = [table_name for table_name in table_list if not self.should_exclude_table(table_name)]
 
         for table_name in self.table_includes_list:
-                yield ExportMysqlTableToS3Task(
-                    table_name=table_name,
-                    db_credentials=self.db_credentials,
-                    database=self.database,
-                )
+            log.debug("requiring table: {}".format(table_name))
+            yield ExportMysqlTableToS3Task(
+                table_name=table_name,
+                db_credentials=self.db_credentials,
+                database=self.database,
+            )
 
     def output(self):
         return self.database_metadata_target()

@@ -202,7 +202,7 @@ class ExportMysqlDatabaseToS3Task(MysqlToVerticaTaskMixin, luigi.Task):
         if self.include:
             return not any(re.match(pattern, table_name) for pattern in self.include)
         elif self.exclude:
-            return any(re.match(pattern, table_name) for pattern in self.exclude):
+            return any(re.match(pattern, table_name) for pattern in self.exclude)
 
         return False
 

@@ -33,8 +33,8 @@ class LoadInternalReportingCertificatesToSnowflake(WarehouseMixin, SnowflakeLoad
             ('certificate_mode', 'VARCHAR(200)'),
             ('final_grade', 'VARCHAR(5)'),
             ('has_passed', 'INTEGER'),
-            ('created_date', 'TIMESTAMP'),
-            ('modified_date', 'TIMESTAMP'),
+            ('created_date', 'TIMESTAMP_TZ'),
+            ('modified_date', 'TIMESTAMP_TZ'),
         ]
 
     @property
@@ -89,7 +89,7 @@ class LoadInternalReportingCourseToSnowflake(WarehouseMixin, SnowflakeLoadFromHi
 
     @property
     def columns(self):
-        return CourseRecord.get_sql_schema()
+        return CourseRecord.get_sql_schema(use_timestamp_tz=True)
 
 
 class LoadInternalReportingCourseSeatToSnowflake(WarehouseMixin, SnowflakeLoadFromHiveTSVTask):
@@ -109,7 +109,7 @@ class LoadInternalReportingCourseSeatToSnowflake(WarehouseMixin, SnowflakeLoadFr
 
     @property
     def columns(self):
-        return CourseSeatRecord.get_sql_schema()
+        return CourseSeatRecord.get_sql_schema(use_timestamp_tz=True)
 
 
 class LoadInternalReportingCourseSubjectToSnowflake(WarehouseMixin, SnowflakeLoadFromHiveTSVTask):
@@ -129,7 +129,7 @@ class LoadInternalReportingCourseSubjectToSnowflake(WarehouseMixin, SnowflakeLoa
 
     @property
     def columns(self):
-        return CourseSubjectRecord.get_sql_schema()
+        return CourseSubjectRecord.get_sql_schema(use_timestamp_tz=True)
 
 
 class LoadInternalReportingProgramCourseToSnowflake(WarehouseMixin, SnowflakeLoadFromHiveTSVTask):
@@ -149,7 +149,7 @@ class LoadInternalReportingProgramCourseToSnowflake(WarehouseMixin, SnowflakeLoa
 
     @property
     def columns(self):
-        return ProgramCourseRecord.get_sql_schema()
+        return ProgramCourseRecord.get_sql_schema(use_timestamp_tz=True)
 
 
 class LoadInternalReportingCourseCatalogToSnowflake(WarehouseMixin, SnowflakeLoadDownstreamMixin, luigi.WrapperTask):
@@ -207,7 +207,7 @@ class LoadInternalReportingCourseStructureToSnowflake(WarehouseMixin, SnowflakeL
 
     @property
     def columns(self):
-        return CourseBlockRecord.get_sql_schema()
+        return CourseBlockRecord.get_sql_schema(use_timestamp_tz=True)
 
 
 class LoadUserCourseSummaryToSnowflake(WarehouseMixin, SnowflakeLoadFromHiveTSVTask):
@@ -226,7 +226,7 @@ class LoadUserCourseSummaryToSnowflake(WarehouseMixin, SnowflakeLoadFromHiveTSVT
 
     @property
     def columns(self):
-        return EnrollmentSummaryRecord.get_sql_schema()
+        return EnrollmentSummaryRecord.get_sql_schema(use_timestamp_tz=True)
 
 
 class LoadInternalReportingUserActivityToSnowflake(WarehouseMixin, SnowflakeLoadFromHiveTSVTask):
@@ -291,7 +291,7 @@ class LoadInternalReportingUserToSnowflake(WarehouseMixin, SnowflakeLoadFromHive
             # We use VARCHAR(45) for vertica, but vertica truncates to 45 characters, whereas snowflake throws an error.
             # 54 is the maximum length in our data right now, all of which are retired_user_<sha-1>@retired.invalid
             ('user_username', 'VARCHAR(54)'),
-            ('user_account_creation_time', 'TIMESTAMP'),
+            ('user_account_creation_time', 'TIMESTAMP_TZ'),
             ('user_last_location_country_code', 'VARCHAR(45)')
         ]
 

@@ -352,7 +352,7 @@ class Record(object):
             sql_type = field_obj.sql_type
             if use_timestamp_tz and sql_type == 'DATETIME':
                 sql_type = 'TIMESTAMP_TZ'
-            schema.append((field_name, field_obj.sql_type))
+            schema.append((field_name, sql_type))
         return schema
 
     @classmethod

@@ -220,7 +220,7 @@ class ExportMysqlDatabaseToS3Task(MysqlToVerticaTaskMixin, luigi.Task):
         for table_name in self.table_includes_list:
                 yield ExportMysqlTableToS3Task(
                     table_name=table_name,
-                    credentials=self.db_credentials,
+                    db_credentials=self.db_credentials,
                     database=self.database,
                 )
 
